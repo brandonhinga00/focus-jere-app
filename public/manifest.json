@@ -1,0 +1,21 @@
+{
+  "short_name": "Focus Jere",
+  "name": "Focus Jere",
+  "description": "Una lista de tareas cronológica, minimalista y motivadora para ayudarte a organizar tu día con bloques de tiempo de tamaño uniforme para mayor claridad y concentración.",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/7518/7518748.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/7518/7518748.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0891b2",
+  "background_color": "#0f172a"
+}
