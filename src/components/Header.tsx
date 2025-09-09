@@ -24,28 +24,30 @@ const Header: React.FC<HeaderProps> = ({ completedCount, totalCount, onPrepareNe
   const baseButtonClass = "px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-200 border-2 flex-shrink-0";
 
   return (
-    <header className="space-y-4">
+    <header className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-cyan-600 dark:text-cyan-300">Focus Block</h1>
-        <div className="flex items-center gap-2">
-           <button
-            onClick={onToggleTheme}
-            className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-colors duration-300"
-            aria-label={`Cambiar a tema ${theme === 'dark' ? 'claro' : 'oscuro'}`}
-          >
-            {theme === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
+        <button
+          onClick={onToggleTheme}
+          className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-colors duration-300"
+          aria-label={`Cambiar a tema ${theme === 'dark' ? 'claro' : 'oscuro'}`}
+        >
+          {theme === 'dark' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ) : (
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
           <button
             onClick={onOpenAddTaskModal}
-            className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 flex items-center gap-2"
+            className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 text-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -54,12 +56,12 @@ const Header: React.FC<HeaderProps> = ({ completedCount, totalCount, onPrepareNe
           </button>
           <button
             onClick={onPrepareNextDay}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-lg transition-colors duration-300 text-center"
           >
-            Preparar Día Siguiente
+            Preparar Día
           </button>
-        </div>
       </div>
+
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -99,7 +101,8 @@ const Header: React.FC<HeaderProps> = ({ completedCount, totalCount, onPrepareNe
                 >
                     Todas
                 </button>
-                {Object.values(Category).map(cat => {
+                {/* FIX: Explicitly type `cat` to prevent it from being inferred as `unknown`. */}
+                {Object.values(Category).map((cat: Category) => {
                     const isActive = activeCategory === cat;
                     const styles = CATEGORY_STYLES[cat];
                     return (
@@ -115,8 +118,8 @@ const Header: React.FC<HeaderProps> = ({ completedCount, totalCount, onPrepareNe
             </div>
 
             {/* Status and Sort Filters */}
-            <div className="flex flex-wrap justify-between items-center gap-4">
-                <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400 flex-shrink-0 mr-2">Estado:</span>
                     <button
                         onClick={() => onCompletionFilterChange('all')}
@@ -139,7 +142,7 @@ const Header: React.FC<HeaderProps> = ({ completedCount, totalCount, onPrepareNe
                 </div>
                 <button
                   onClick={onToggleSortOrder}
-                  className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
                   aria-label={`Ordenar por hora ${sortOrder === 'asc' ? 'ascendente' : 'descendente'}`}
                 >
                   <span>Hora</span>
