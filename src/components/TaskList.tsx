@@ -11,6 +11,10 @@ interface TaskListProps {
   currentTime: Date;
   onReorder: (reorderedTasks: Task[]) => void;
   reorderingEnabled?: boolean;
+  isAppDragging: boolean;
+  onAppDragStart: () => void;
+  onAppDragEnd: () => void;
+  onSetIsOverDeleteZone: (isOver: boolean) => void;
 }
 
 const timeToMinutes = (time: string): number => {
@@ -22,25 +26,36 @@ const timeToMinutes = (time: string): number => {
 interface DragState {
   isDragging: boolean;
   startIndex: number | null;
+  draggedTaskId: number | null;
   dragOverIndex: number | null;
   initialEventY: number;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, onToggleNotification, onDeleteTask, currentTime, onReorder, reorderingEnabled = true }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, onToggleNotification, onDeleteTask, currentTime, onReorder, reorderingEnabled = true, isAppDragging, onAppDragStart, onAppDragEnd, onSetIsOverDeleteZone }) => {
   const nowInMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
     startIndex: null,
+    draggedTaskId: null,
     dragOverIndex: null,
     initialEventY: 0,
   });
   const [currentY, setCurrentY] = useState(0);
   const taskRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
+  const isOverDeleteZone = (x: number, y: number): boolean => {
+    const zoneX = 24;
+    const zoneSize = 80;
+    const zoneY = window.innerHeight - zoneSize - 24;
+    
+    return x >= zoneX && x <= zoneX + zoneSize && y >= zoneY && y <= zoneY + zoneSize;
+  };
 
-  const handleLongPressStart = useCallback((index: number, e: React.MouseEvent | React.TouchEvent) => {
+  const handleLongPressStart = useCallback((index: number, taskId: number, e: React.MouseEvent | React.TouchEvent) => {
     if (!reorderingEnabled) return;
     e.preventDefault();
+    onAppDragStart();
     document.body.style.cursor = 'grabbing';
     document.body.style.userSelect = 'none';
 
@@ -49,50 +64,67 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
     setDragState({
       isDragging: true,
       startIndex: index,
+      draggedTaskId: taskId,
       dragOverIndex: index,
       initialEventY: eventY,
     });
     setCurrentY(eventY);
-  }, [reorderingEnabled]);
+  }, [reorderingEnabled, onAppDragStart]);
 
   const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!dragState.isDragging) return;
+    e.preventDefault();
 
     const eventY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const eventX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     setCurrentY(eventY);
 
-    const newDragOverIndex = taskRefs.current.findIndex(ref => {
-      if (!ref) return false;
-      const rect = ref.getBoundingClientRect();
-      return eventY >= rect.top && eventY <= rect.bottom;
-    });
+    const isOverZone = isOverDeleteZone(eventX, eventY);
+    onSetIsOverDeleteZone(isOverZone);
 
-    if (newDragOverIndex !== -1) {
-      setDragState(prev => ({ ...prev, dragOverIndex: newDragOverIndex }));
+    if (isOverZone) {
+      setDragState(prev => ({ ...prev, dragOverIndex: null }));
+    } else {
+      const newDragOverIndex = taskRefs.current.findIndex(ref => {
+        if (!ref) return false;
+        const rect = ref.getBoundingClientRect();
+        return eventY >= rect.top && eventY <= rect.bottom;
+      });
+
+      if (newDragOverIndex !== -1) {
+        setDragState(prev => ({ ...prev, dragOverIndex: newDragOverIndex }));
+      }
     }
-  }, [dragState.isDragging]);
+  }, [dragState.isDragging, onSetIsOverDeleteZone]);
 
 
-  const handleDragEnd = useCallback(() => {
-    if (!dragState.isDragging || dragState.startIndex === null || dragState.dragOverIndex === null) return;
+  const handleDragEnd = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!dragState.isDragging || dragState.startIndex === null) return;
     
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
 
-    if (dragState.startIndex !== dragState.dragOverIndex) {
+    const eventY = 'changedTouches' in e ? e.changedTouches[0].clientY : e.clientY;
+    const eventX = 'changedTouches' in e ? e.changedTouches[0].clientX : e.clientX;
+
+    if (isOverDeleteZone(eventX, eventY) && dragState.draggedTaskId !== null) {
+      onDeleteTask(dragState.draggedTaskId);
+    } else if (dragState.dragOverIndex !== null && dragState.startIndex !== dragState.dragOverIndex) {
       const reorderedTasks = [...tasks];
       const [draggedItem] = reorderedTasks.splice(dragState.startIndex, 1);
       reorderedTasks.splice(dragState.dragOverIndex, 0, draggedItem);
       onReorder(reorderedTasks);
     }
     
+    onAppDragEnd();
     setDragState({
       isDragging: false,
       startIndex: null,
+      draggedTaskId: null,
       dragOverIndex: null,
       initialEventY: 0,
     });
-  }, [dragState, tasks, onReorder]);
+  }, [dragState, tasks, onReorder, onDeleteTask, onAppDragEnd]);
 
   useEffect(() => {
     if (dragState.isDragging) {
@@ -176,9 +208,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
               isDropTarget={isDropTarget}
               isDraggingPlaceholder={isBeingDragged}
               onToggle={() => onToggleTask(task.id)}
-              onEdit={onEditTask}
+              onEdit={() => onEditTask(task)}
               onToggleNotification={() => onToggleNotification(task.id)}
               onDelete={() => onDeleteTask(task.id)}
+              // FIX: The inline function for onLongPressStart had an incorrect signature, causing a type error.
+              // It now correctly receives index, taskId, and the event. Passing handleLongPressStart directly is cleaner as the signatures match.
               onLongPressStart={handleLongPressStart}
               reorderingEnabled={reorderingEnabled}
               progressPercentage={progressPercentage}

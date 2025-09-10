@@ -5,6 +5,7 @@ import EditTaskModal from './components/EditTaskModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import DailySummaryModal from './components/DailySummaryModal';
 import AddTaskModal from './components/AddTaskModal';
+import DragToDeleteZone from './components/DragToDeleteZone';
 import { Task, Category } from './types';
 import { SCHEDULE_DATA } from './constants';
 
@@ -84,6 +85,9 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'
   );
+  const [isDragging, setIsDragging] = useState(false);
+  const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
+
 
   useEffect(() => {
     try {
@@ -248,7 +252,11 @@ const App: React.FC = () => {
     if (deletingTaskId === null) return;
     setTasks(prevTasks => prevTasks.filter(task => task.id !== deletingTaskId));
     handleCloseDeleteConfirm();
-  }, [deletingTaskId, handleCloseDeleteConfirm]);
+     if(isDragging) {
+        setIsDragging(false);
+        setIsOverDeleteZone(false);
+    }
+  }, [deletingTaskId, handleCloseDeleteConfirm, isDragging]);
   
   const handleToggleSortOrder = useCallback(() => {
     const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
@@ -279,6 +287,19 @@ const App: React.FC = () => {
 
   const handleCompletionFilterChange = useCallback((status: 'all' | 'completed' | 'incomplete') => {
     setCompletionFilter(status);
+  }, []);
+
+  const handleDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+    setIsOverDeleteZone(false);
+  }, []);
+
+  const handleSetIsOverDeleteZone = useCallback((isOver: boolean) => {
+    setIsOverDeleteZone(isOver);
   }, []);
 
   const completedCount = useMemo(() => tasks.filter(task => task.completed).length, [tasks]);
@@ -336,6 +357,10 @@ const App: React.FC = () => {
             currentTime={currentTime}
             onReorder={handleReorder}
             reorderingEnabled={!activeCategory && !searchQuery.trim()}
+            isAppDragging={isDragging}
+            onAppDragStart={handleDragStart}
+            onAppDragEnd={handleDragEnd}
+            onSetIsOverDeleteZone={handleSetIsOverDeleteZone}
           />
         </main>
       </div>
@@ -366,6 +391,10 @@ const App: React.FC = () => {
           onAdd={handleAddTask}
         />
       )}
+      <DragToDeleteZone 
+        isVisible={isDragging}
+        isOver={isOverDeleteZone}
+      />
     </div>
   );
 }

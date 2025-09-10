@@ -10,7 +10,7 @@ interface TaskBlockProps {
   onToggleNotification: () => void;
   onDelete: () => void;
   index: number;
-  onLongPressStart: (index: number, e: React.MouseEvent | React.TouchEvent) => void;
+  onLongPressStart: (index: number, taskId: number, e: React.MouseEvent | React.TouchEvent) => void;
   isDraggingPlaceholder?: boolean;
   isDropTarget?: boolean;
   reorderingEnabled?: boolean;
@@ -96,7 +96,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     pressEventRef.current = e;
     longPressTimer.current = setTimeout(() => {
       if (pressEventRef.current) {
-        onLongPressStart(index, pressEventRef.current);
+        onLongPressStart(index, task.id, pressEventRef.current);
       }
     }, 300);
   };
