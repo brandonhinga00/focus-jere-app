@@ -96,7 +96,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     }
   };
 
-  const handlePressUp = () => {
+  const handlePressUp = (e: React.MouseEvent | React.TouchEvent) => {
     clearLongPressTimer();
     
     if (isLongPressActive) {
@@ -123,6 +123,11 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
         taskNodeRef.current.style.transform = 'translateX(0px)';
       }
     } else {
+      // This is a tap. If it's a touch event, prevent the subsequent "ghost" click.
+      if ('touches' in e) {
+        e.preventDefault();
+      }
+      
       const now = new Date().getTime();
       const DOUBLE_PRESS_DELAY = 300;
       if (now - lastTap.current < DOUBLE_PRESS_DELAY) {
