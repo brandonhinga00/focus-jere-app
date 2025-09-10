@@ -379,6 +379,9 @@ const App: React.FC = () => {
             reorderingEnabled={!activeCategory && !searchQuery.trim()}
           />
         </main>
+        <footer className="text-center mt-8 py-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs text-gray-400 dark:text-gray-500">v1.4.1</p>
+        </footer>
       </div>
       {editingTask && (
         <EditTaskModal
