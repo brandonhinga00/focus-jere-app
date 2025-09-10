@@ -17,12 +17,14 @@ interface TaskBlockProps {
 }
 
 const SWIPE_THRESHOLD = 80;
+const MOVE_THRESHOLD = 10; // Pixels to move before deciding if it's a scroll or swipe
 
 const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle, onDelete, index, onLongPressStart, isDraggingPlaceholder = false, isDropTarget = false, reorderingEnabled = true, progressPercentage }) => {
   const { emoji, activity, startTime, endTime, category, completed } = task;
   
   const [dragState, setDragState] = useState({
     startX: 0,
+    startY: 0, // Track vertical start position
     currentX: 0,
     isSwiping: false,
     isIntentional: false,
@@ -41,7 +43,8 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     setIsLongPressActive(false);
     pressEventRef.current = e;
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    setDragState({ startX: clientX, currentX: clientX, isSwiping: false, isIntentional: false });
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    setDragState({ startX: clientX, startY: clientY, currentX: clientX, isSwiping: false, isIntentional: false });
 
     if (!completed && reorderingEnabled) {
       longPressTimer.current = setTimeout(() => {
@@ -59,11 +62,21 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     if (dragState.startX === 0) return;
 
     const currentX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     const deltaX = currentX - dragState.startX;
+    const deltaY = currentY - dragState.startY;
 
-    if (!dragState.isIntentional && Math.abs(deltaX) > 10) {
+    if (!dragState.isIntentional && (Math.abs(deltaX) > MOVE_THRESHOLD || Math.abs(deltaY) > MOVE_THRESHOLD)) {
       clearLongPressTimer();
-      setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // It's a horizontal swipe
+        setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
+      } else {
+        // It's a vertical scroll, so we cancel the gesture for this component
+        setDragState({ startX: 0, startY: 0, currentX: 0, isSwiping: false, isIntentional: false });
+        return;
+      }
     }
 
     if (dragState.isSwiping) {
@@ -88,7 +101,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     
     if (isLongPressActive) {
       setIsLongPressActive(false);
-      setDragState({ startX: 0, currentX: 0, isSwiping: false, isIntentional: false });
+      setDragState({ startX: 0, startY: 0, currentX: 0, isSwiping: false, isIntentional: false });
       return;
     }
     
@@ -120,7 +133,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
       }
     }
 
-    setDragState({ startX: 0, currentX: 0, isSwiping: false, isIntentional: false });
+    setDragState({ startX: 0, startY: 0, currentX: 0, isSwiping: false, isIntentional: false });
   };
   
   const handleGestureCancel = () => {
@@ -136,7 +149,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     }
 
     // Reset state without triggering any actions
-    setDragState({ startX: 0, currentX: 0, isSwiping: false, isIntentional: false });
+    setDragState({ startX: 0, startY: 0, currentX: 0, isSwiping: false, isIntentional: false });
   };
 
   const deltaX = dragState.isSwiping ? dragState.currentX - dragState.startX : 0;
