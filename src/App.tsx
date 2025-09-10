@@ -144,6 +144,18 @@ const App: React.FC = () => {
     return () => clearInterval(timerId);
   }, []);
 
+  useEffect(() => {
+    const isModalOpen = isSummaryModalOpen || isAddTaskModalOpen || !!editingTask || showOnboarding;
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isSummaryModalOpen, isAddTaskModalOpen, editingTask, showOnboarding]);
+
   const summaryData = useMemo(() => {
     const completedTasks = tasks.filter(t => t.completed);
     const incompleteTasks = tasks.filter(t => !t.completed);
@@ -380,7 +392,7 @@ const App: React.FC = () => {
           />
         </main>
         <footer className="text-center mt-8 py-4 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-400 dark:text-gray-500">v1.4.6</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">v1.5.0</p>
         </footer>
       </div>
       {editingTask && (
