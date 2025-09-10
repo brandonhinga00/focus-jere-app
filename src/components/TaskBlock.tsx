@@ -80,6 +80,12 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     }
 
     if (dragState.isSwiping) {
+        // For touch events, prevent the default browser action (scrolling)
+        // when a horizontal swipe is active.
+        if ('touches' in e) {
+            e.preventDefault();
+        }
+
         // Prevent swiping left on completed tasks
         if (completed && deltaX < 0) {
              setDragState(prev => ({ ...prev, currentX: prev.startX }));
