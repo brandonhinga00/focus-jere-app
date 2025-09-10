@@ -23,7 +23,7 @@ interface DragState {
   startIndex: number | null;
   draggedTaskId: number | null;
   dragOverIndex: number | null;
-  initialEventY: number;
+  clickOffsetY: number;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, onDeleteTask, currentTime, onReorder, reorderingEnabled = true }) => {
@@ -34,7 +34,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
     startIndex: null,
     draggedTaskId: null,
     dragOverIndex: null,
-    initialEventY: 0,
+    clickOffsetY: 0,
   });
   const [currentY, setCurrentY] = useState(0);
   const taskRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -48,13 +48,15 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
     document.body.style.userSelect = 'none';
 
     const eventY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const elementRect = taskRefs.current[index]?.getBoundingClientRect();
+    const clickOffsetY = elementRect ? eventY - elementRect.top : 0;
     
     setDragState({
       isDragging: true,
       startIndex: index,
       draggedTaskId: taskId,
       dragOverIndex: index,
-      initialEventY: eventY,
+      clickOffsetY: clickOffsetY,
     });
     setCurrentY(eventY);
     pointerYRef.current = eventY;
@@ -143,7 +145,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
       startIndex: null,
       draggedTaskId: null,
       dragOverIndex: null,
-      initialEventY: 0,
+      clickOffsetY: 0,
     });
   }, [dragState, tasks, onReorder, stopScrolling]);
 
@@ -184,7 +186,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
           pointerEvents: 'none',
           zIndex: 1000,
           left: draggedElementRef.getBoundingClientRect().left,
-          top: currentY - (dragState.initialEventY - draggedElementRef.getBoundingClientRect().top),
+          top: currentY - dragState.clickOffsetY,
           width: draggedElementRef.getBoundingClientRect().width,
         }}>
           <div className="transform scale-105 rotate-2 shadow-2xl transition-all duration-300">
