@@ -67,7 +67,11 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
               onChange={handleChange}
               className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               required
+              maxLength={50}
             />
+            <div className={`text-right text-xs mt-1 ${formData.activity.length >= 50 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+              {formData.activity.length} / 50
+            </div>
           </div>
           <div className="flex gap-4">
             <div className="flex-1">

@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Task, Category } from '../types';
 
-interface AddTaskModalProps {
+interface EditTaskModalProps {
+  task: Task;
   onClose: () => void;
-  onAdd: (task: Omit<Task, 'id' | 'completed'>) => void;
+  onSave: (task: Task) => void;
 }
 
-const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
-  const [formData, setFormData] = useState({
-    activity: '',
-    emoji: '📝',
-    category: Category.Work,
-    startTime: '',
-    endTime: '',
-    notificationsEnabled: true,
-  });
+const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) => {
+  const [formData, setFormData] = useState<Task>(task);
   const [timeError, setTimeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFormData(task);
+  }, [task]);
 
   useEffect(() => {
     if (formData.startTime && formData.endTime) {
@@ -24,8 +22,6 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
       } else {
         setTimeError(null);
       }
-    } else {
-        setTimeError(null); // Clear error if one of the fields is empty
     }
   }, [formData.startTime, formData.endTime]);
 
@@ -41,10 +37,10 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (timeError || !formData.activity || !formData.startTime || !formData.endTime) {
+    if (timeError) {
       return;
     }
-    onAdd(formData);
+    onSave(formData);
   };
 
   return (
@@ -53,13 +49,13 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="add-task-title"
+      aria-labelledby="edit-task-title"
     >
       <div
         className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-xl w-full max-w-md mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="add-task-title" className="text-2xl font-bold mb-6 text-cyan-600 dark:text-cyan-300">Agregar Nueva Tarea</h2>
+        <h2 id="edit-task-title" className="text-2xl font-bold mb-6 text-cyan-600 dark:text-cyan-300">Editar Tarea</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="activity" className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Actividad</label>
@@ -71,7 +67,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
               onChange={handleChange}
               className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               required
+              maxLength={50}
             />
+            <div className={`text-right text-xs mt-1 ${formData.activity.length >= 50 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+              {formData.activity.length} / 50
+            </div>
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
@@ -155,10 +155,10 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
             </button>
             <button
               type="submit"
-              disabled={!!timeError || !formData.activity || !formData.startTime || !formData.endTime}
+              disabled={!!timeError}
               className="px-4 py-2 rounded-md text-white font-semibold bg-cyan-600 hover:bg-cyan-500 transition-colors disabled:bg-cyan-300 dark:disabled:bg-cyan-800 disabled:cursor-not-allowed"
             >
-              Agregar Tarea
+              Guardar Cambios
             </button>
           </div>
         </form>
@@ -167,4 +167,4 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
   );
 };
 
-export default AddTaskModal;
+export default EditTaskModal;
