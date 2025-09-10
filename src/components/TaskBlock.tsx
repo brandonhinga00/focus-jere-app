@@ -71,9 +71,9 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
       if (Math.abs(deltaX) > MOVE_THRESHOLD || Math.abs(deltaY) > MOVE_THRESHOLD) {
         clearLongPressTimer();
 
-        // If horizontal movement is greater, we start a swipe.
-        // `touch-action: pan-y` will let the browser handle vertical scrolls.
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // If horizontal movement is substantially greater than vertical, we start a swipe.
+        // This prevents accidental swipes when the user is trying to scroll vertically.
+        if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
           setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
         } else {
           // It's a vertical scroll. Abort the gesture on this element to let the browser scroll freely.
