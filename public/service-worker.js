@@ -2,23 +2,10 @@ const CACHE_NAME = 'focus-jere-cache-v2';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
-  '/index.tsx',
-  '/App.tsx',
-  '/types.ts',
-  '/constants.ts',
-  '/components/Header.tsx',
-  '/components/TaskList.tsx',
-  '/components/TaskBlock.tsx',
-  '/components/EditTaskModal.tsx',
-  '/components/DeleteConfirmationModal.tsx',
-  '/components/DailySummaryModal.tsx',
-  '/components/AddTaskModal.tsx',
   '/manifest.json',
   'https://cdn.tailwindcss.com',
   'https://aistudiocdn.com/react@^19.1.1',
   'https://aistudiocdn.com/react-dom@^19.1.1/',
-  'https://cdn.pixabay.com/download/audio/2022/03/15/audio_2c0a3251a3.mp3?filename=notification-121855.mp3',
-  'https://cdn-icons-png.flaticon.com/512/1001/1001296.png',
   'https://cdn-icons-png.flaticon.com/512/7518/7518748.png'
 ];
 
