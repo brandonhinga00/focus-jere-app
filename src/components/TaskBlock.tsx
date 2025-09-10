@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Task } from '../types';
 import { CATEGORY_STYLES } from '../constants';
 
@@ -7,7 +7,6 @@ interface TaskBlockProps {
   isCurrent: boolean;
   onToggle: () => void;
   onEdit: (task: Task) => void;
-  onToggleNotification: () => void;
   onDelete: () => void;
   index: number;
   onLongPressStart: (index: number, taskId: number, e: React.MouseEvent | React.TouchEvent) => void;
@@ -17,90 +16,66 @@ interface TaskBlockProps {
   progressPercentage?: number;
 }
 
-const CheckboxIcon: React.FC<{ checked: boolean }> = ({ checked }) => (
-  <div
-    className={`w-8 h-8 rounded-md flex items-center justify-center cursor-pointer transition-all duration-300
-    ${checked ? 'bg-green-500' : 'bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500'}`}
-  >
-    {checked && (
-      <svg
-        className="w-6 h-6 text-white"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-      </svg>
-    )}
-  </div>
-);
+const SWIPE_THRESHOLD = 80;
 
-const EditIcon: React.FC<{ onClick: (e: React.MouseEvent) => void }> = ({ onClick }) => (
-    <button
-      onClick={onClick}
-      aria-label="Editar tarea"
-      className="w-8 h-8 rounded-md flex items-center justify-center cursor-pointer transition-all duration-300 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-        <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
-      </svg>
-    </button>
-);
+const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle, onDelete, index, onLongPressStart, isDraggingPlaceholder = false, isDropTarget = false, reorderingEnabled = true, progressPercentage }) => {
+  const { emoji, activity, startTime, endTime, category, completed } = task;
+  
+  const [dragState, setDragState] = useState({
+    startX: 0,
+    currentX: 0,
+    isSwiping: false,
+    isIntentional: false,
+  });
+  const [isExiting, setIsExiting] = useState(false);
+  const [isLongPressActive, setIsLongPressActive] = useState(false);
 
-const NotificationIcon: React.FC<{ enabled: boolean; onClick: (e: React.MouseEvent) => void }> = ({ enabled, onClick }) => (
-  <button
-    onClick={onClick}
-    aria-label={enabled ? "Desactivar notificaciones" : "Activar notificaciones"}
-    className={`w-8 h-8 rounded-md flex items-center justify-center cursor-pointer transition-all duration-300 ${enabled ? 'bg-yellow-500 hover:bg-yellow-400 dark:bg-yellow-600 dark:hover:bg-yellow-500' : 'bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500'}`}
-  >
-    {enabled ? (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M10 2a6 6 0 00-6 6v3.586l-1.707 1.707A1 1 0 003 15h14a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-      </svg>
-    ) : (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M13.707 14.707a1 1 0 01-1.414 0L10 12.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 11 6.293 8.707a1 1 0 011.414-1.414L10 9.586l2.293-2.293a1 1 0 011.414 1.414L11.414 11l2.293 2.293a1 1 0 010 1.414zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" clipRule="evenodd" />
-        <path d="M10 2a6 6 0 00-6 6v3.586l-1.707 1.707A1 1 0 003 15h14a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" />
-      </svg>
-    )}
-  </button>
-);
-
-const DeleteIcon: React.FC<{ onClick: (e: React.MouseEvent) => void }> = ({ onClick }) => (
-    <button
-      onClick={onClick}
-      aria-label="Eliminar tarea"
-      className="w-8 h-8 rounded-md flex items-center justify-center cursor-pointer transition-all duration-300 bg-gray-300 hover:bg-red-500 dark:bg-gray-600 dark:hover:bg-red-600 group"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:text-white" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
-      </svg>
-    </button>
-);
-
-
-const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle, onToggleNotification, onDelete, index, onLongPressStart, isDraggingPlaceholder = false, isDropTarget = false, reorderingEnabled = true, progressPercentage }) => {
-  const { emoji, activity, startTime, endTime, category, completed, notificationsEnabled } = task;
-  const categoryColorClass = CATEGORY_STYLES[category].block;
-
-  // FIX: Using ReturnType<typeof setTimeout> for environment-agnostic timer ID typing.
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pressEventRef = useRef<React.MouseEvent | React.TouchEvent | null>(null);
+  const lastTap = useRef(0);
+  const taskNodeRef = useRef<HTMLDivElement>(null);
 
   const handlePressDown = (e: React.MouseEvent | React.TouchEvent) => {
-    if ((e.target as HTMLElement).closest('button, [role="button"]')) {
-      return;
-    }
+    if ((e.target as HTMLElement).closest('button, [role="button"]')) return;
+    
+    setIsLongPressActive(false);
     pressEventRef.current = e;
-    longPressTimer.current = setTimeout(() => {
-      if (pressEventRef.current) {
-        onLongPressStart(index, task.id, pressEventRef.current);
-      }
-    }, 300);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    setDragState({ startX: clientX, currentX: clientX, isSwiping: false, isIntentional: false });
+
+    if (!completed && reorderingEnabled) {
+      longPressTimer.current = setTimeout(() => {
+        if (pressEventRef.current) {
+          setIsLongPressActive(true);
+          setDragState(prev => ({ ...prev, isSwiping: false, isIntentional: false })); // Prevent swipe
+          onLongPressStart(index, task.id, pressEventRef.current);
+        }
+      }, 300);
+    }
   };
 
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isLongPressActive) return;
+    if (dragState.startX === 0) return;
+
+    const currentX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const deltaX = currentX - dragState.startX;
+
+    if (!dragState.isIntentional && Math.abs(deltaX) > 10) {
+      clearLongPressTimer();
+      setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
+    }
+
+    if (dragState.isSwiping) {
+        // Prevent swiping left on completed tasks
+        if (completed && deltaX < 0) {
+             setDragState(prev => ({ ...prev, currentX: prev.startX }));
+             return;
+        }
+       setDragState(prev => ({ ...prev, currentX }));
+    }
+  };
+  
   const clearLongPressTimer = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
@@ -110,100 +85,140 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
 
   const handlePressUp = () => {
     clearLongPressTimer();
-  };
+    
+    if (isLongPressActive) {
+      setIsLongPressActive(false);
+      setDragState({ startX: 0, currentX: 0, isSwiping: false, isIntentional: false });
+      return;
+    }
+    
+    if (dragState.isSwiping) {
+      const deltaX = dragState.currentX - dragState.startX;
+      let actionTaken = false;
 
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (pressEventRef.current) {
-      const startX = 'touches' in pressEventRef.current ? pressEventRef.current.touches[0].clientX : pressEventRef.current.clientX;
-      const startY = 'touches' in pressEventRef.current ? pressEventRef.current.touches[0].clientY : pressEventRef.current.clientY;
-      const currentX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      if (deltaX > SWIPE_THRESHOLD) {
+        onToggle();
+        actionTaken = true;
+      } else if (deltaX < -SWIPE_THRESHOLD && !completed) {
+        setIsExiting(true);
+        setTimeout(() => onDelete(), 150);
+        actionTaken = true;
+      }
       
-      const distance = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
-
-      if (distance > 10) { 
-        clearLongPressTimer();
+      if (!actionTaken && taskNodeRef.current) {
+        taskNodeRef.current.style.transition = 'transform 0.3s ease';
+        taskNodeRef.current.style.transform = 'translateX(0px)';
+      }
+    } else {
+      const now = new Date().getTime();
+      const DOUBLE_PRESS_DELAY = 300;
+      if (now - lastTap.current < DOUBLE_PRESS_DELAY) {
+        onEdit(task);
+        lastTap.current = 0;
+      } else {
+        lastTap.current = now;
       }
     }
+
+    setDragState({ startX: 0, currentX: 0, isSwiping: false, isIntentional: false });
+  };
+  
+  const handleGestureCancel = () => {
+    clearLongPressTimer();
+    setIsLongPressActive(false);
+
+    if (dragState.isSwiping) {
+      // If a swipe was in progress, animate it back to origin
+      if (taskNodeRef.current) {
+        taskNodeRef.current.style.transition = 'transform 0.3s ease';
+        taskNodeRef.current.style.transform = 'translateX(0px)';
+      }
+    }
+
+    // Reset state without triggering any actions
+    setDragState({ startX: 0, currentX: 0, isSwiping: false, isIntentional: false });
   };
 
+  const deltaX = dragState.isSwiping ? dragState.currentX - dragState.startX : 0;
+  const opacity = Math.min(Math.abs(deltaX) / SWIPE_THRESHOLD, 1);
+  const transform = `translateX(${deltaX}px)`;
 
+  const categoryColorClass = CATEGORY_STYLES[category].block;
+  
   const containerClasses = `
-    flex items-center p-4 rounded-xl border transition-all duration-300 relative overflow-hidden
-    ${categoryColorClass}
-    ${completed ? 'opacity-50 scale-95' : 'scale-100'}
-    ${isCurrent ? 'ring-2 ring-offset-2 ring-offset-gray-100 dark:ring-offset-gray-900 ring-cyan-500 dark:ring-cyan-400' : ''}
-    ${isDropTarget ? 'border-t-4 border-t-cyan-500 dark:border-t-cyan-400' : ''}
+    relative transition-transform duration-300
+    ${isDropTarget ? 'pt-2' : ''}
     ${isDraggingPlaceholder ? 'opacity-30' : 'opacity-100'}
-    ${!completed && reorderingEnabled ? 'cursor-grab' : ''}
   `;
 
-  const textClasses = `
+  const taskWrapperClasses = `
     transition-all duration-300
+    ${isExiting ? 'opacity-0 scale-90' : (completed ? 'scale-95' : 'scale-100')}
+  `;
+
+  const taskBlockClasses = `
+    flex items-center p-4 rounded-xl border relative overflow-hidden w-full
+    ${categoryColorClass}
+    ${completed ? 'opacity-60' : ''}
+    ${isCurrent ? 'ring-2 ring-offset-2 ring-offset-gray-100 dark:ring-offset-gray-900 ring-cyan-500 dark:ring-cyan-400' : ''}
+    ${(!completed && reorderingEnabled) || completed ? 'cursor-grab' : ''}
+  `;
+   const textClasses = `
+    transition-colors duration-300
     ${completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'}
   `;
-  
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onEdit(task);
-  };
-  
-  const handleToggleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggle();
-  };
-  
-  const handleNotificationClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleNotification();
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete();
-  };
-
 
   return (
-    <div 
-      className={containerClasses}
-      onMouseDown={handlePressDown}
-      onMouseUp={handlePressUp}
-      onMouseLeave={handlePressUp}
-      onTouchStart={handlePressDown}
-      onTouchEnd={handlePressUp}
-      onTouchMove={handleMove}
-    >
-      <div className="text-4xl mr-4">{completed ? '✅' : emoji}</div>
-      <div className="flex-grow">
-        <p className={`font-bold text-lg ${textClasses}`}>{activity}</p>
-        <p className={`text-sm ${completed ? 'text-gray-500 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}`}>{startTime} - {endTime}</p>
-      </div>
-      <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-        {!completed ? (
-          <>
-            <NotificationIcon enabled={notificationsEnabled} onClick={handleNotificationClick} />
-            <EditIcon onClick={handleEditClick} />
-            <DeleteIcon onClick={handleDeleteClick} />
-          </>
-        ) : (
-          <div className="w-28 h-8"></div>
-        )}
-        <div onClick={handleToggleClick} role="button" aria-label={`Marcar ${activity} como ${completed ? 'incompleta' : 'completada'}`}>
-            <CheckboxIcon checked={completed} />
-        </div>
-      </div>
-       {isCurrent && !completed && typeof progressPercentage === 'number' && (
-        <div 
-            className="absolute bottom-0 left-0 h-1 bg-cyan-500/50 dark:bg-cyan-400/50 transition-all duration-500 ease-linear"
-            style={{ width: `${progressPercentage}%` }}
-            role="progressbar"
-            aria-valuenow={progressPercentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Progreso de la tarea actual"
-        ></div>
-      )}
+    <div className={containerClasses}>
+       <div className={taskWrapperClasses}>
+          <div 
+            className={`absolute inset-0 rounded-xl flex justify-between items-center transition-opacity duration-100 ${deltaX > 0 ? 'bg-green-500' : 'bg-red-600'}`} 
+            style={{ opacity: opacity }}
+            aria-hidden="true"
+          >
+            <div className={`flex items-center pl-6 text-white transition-opacity duration-100 ${deltaX < 0 ? 'opacity-100' : 'opacity-0'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
+                </svg>
+            </div>
+            <div className={`flex items-center pr-6 text-white transition-opacity duration-100 ${deltaX > 0 ? 'opacity-100' : 'opacity-0'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+            </div>
+          </div>
+          <div 
+            ref={taskNodeRef}
+            className={taskBlockClasses}
+            style={{ transform: transform, transition: dragState.isSwiping ? 'none' : 'transform 0.3s ease' }}
+            onMouseDown={handlePressDown}
+            onMouseMove={handleMove}
+            onMouseUp={handlePressUp}
+            onMouseLeave={handleGestureCancel}
+            onTouchStart={handlePressDown}
+            onTouchMove={handleMove}
+            onTouchEnd={handlePressUp}
+            onTouchCancel={handleGestureCancel}
+          >
+            <div className="text-4xl mr-4 select-none">{completed ? '✅' : emoji}</div>
+            <div className="flex-grow">
+              <p className={`font-bold text-lg ${textClasses}`}>{activity}</p>
+              <p className={`text-sm ${completed ? 'text-gray-500 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}`}>{startTime} - {endTime}</p>
+            </div>
+            
+            {isCurrent && !completed && typeof progressPercentage === 'number' && (
+              <div 
+                  className="absolute bottom-0 left-0 h-1 bg-cyan-500/50 dark:bg-cyan-400/50"
+                  style={{ width: `${progressPercentage}%`, transition: 'width 1s linear' }}
+                  role="progressbar"
+                  aria-valuenow={progressPercentage}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Progreso de la tarea actual"
+              ></div>
+            )}
+          </div>
+       </div>
     </div>
   );
 };

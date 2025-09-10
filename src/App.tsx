@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import TaskList from './components/TaskList';
 import EditTaskModal from './components/EditTaskModal';
-import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import DailySummaryModal from './components/DailySummaryModal';
 import AddTaskModal from './components/AddTaskModal';
-import DragToDeleteZone from './components/DragToDeleteZone';
+import Snackbar from './components/Snackbar';
+import OnboardingModal from './components/OnboardingModal';
 import { Task, Category } from './types';
 import { SCHEDULE_DATA } from './constants';
 
@@ -75,7 +75,6 @@ const App: React.FC = () => {
     return new Set<number>();
   });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -85,9 +84,17 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'
   );
-  const [isDragging, setIsDragging] = useState(false);
-  const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
+  
+  const [lastAction, setLastAction] = useState<{ task: Task; originalIndex: number; type: 'deleted' | 'toggled' } | null>(null);
+  const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
+  useEffect(() => {
+      const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+      if (!onboardingCompleted) {
+        setShowOnboarding(true);
+      }
+  }, []);
 
   useEffect(() => {
     try {
@@ -154,21 +161,63 @@ const App: React.FC = () => {
     };
   }, [tasks]);
 
-  const handleToggleTask = useCallback((taskId: number) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const handleUndo = useCallback(() => {
+    if (!lastAction) return;
+
+    setTasks(prevTasks => {
+      const newTasks = [...prevTasks];
+      if (lastAction.type === 'deleted') {
+        newTasks.splice(lastAction.originalIndex, 0, lastAction.task);
+      } else if (lastAction.type === 'toggled') {
+        // Restore the task to its pre-toggled state
+        const taskExists = newTasks.some(t => t.id === lastAction.task.id);
+        if (taskExists) {
+             return newTasks.map(t => t.id === lastAction.task.id ? lastAction.task : t);
+        }
+      }
+      return newTasks;
+    });
+
+    setLastAction(null);
+    setSnackbarMessage(null);
+  }, [lastAction]);
+
+  const handleDismissSnackbar = useCallback(() => {
+    setSnackbarMessage(null);
+    setLastAction(null);
   }, []);
   
-  const handleToggleTaskNotification = useCallback((taskId: number) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId ? { ...task, notificationsEnabled: !task.notificationsEnabled } : task
-      )
-    );
+  const handleToggleTask = useCallback((taskId: number) => {
+    let originalTask: Task | undefined;
+    let originalIndex = -1;
+
+    setTasks(prevTasks => {
+        originalIndex = prevTasks.findIndex(t => t.id === taskId);
+        if (originalIndex === -1) return prevTasks;
+        
+        originalTask = prevTasks[originalIndex];
+
+        return prevTasks.map(task =>
+            task.id === taskId ? { ...task, completed: !task.completed } : task
+        );
+    });
+
+    if (originalTask) {
+        setLastAction({ task: originalTask, originalIndex, type: 'toggled' });
+        setSnackbarMessage(originalTask.completed ? 'Tarea marcada como incompleta' : 'Tarea completada');
+    }
   }, []);
+  
+  const handleDeleteTask = useCallback((taskId: number) => {
+    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    if (taskIndex === -1) return;
+
+    const taskToDelete = tasks[taskIndex];
+    setLastAction({ task: taskToDelete, originalIndex: taskIndex, type: 'deleted' });
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    setSnackbarMessage('Tarea eliminada');
+  }, [tasks]);
+
 
   const handleOpenSummaryModal = useCallback(() => {
     setIsSummaryModalOpen(true);
@@ -179,8 +228,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleConfirmPrepareNextDay = useCallback(() => {
-    // Explicitly persist the current tasks to localStorage before resetting them.
-    // This ensures that the latest user modifications are persisted before the reset operation.
     try {
         localStorage.setItem('tasks', JSON.stringify(tasks));
     } catch (error) {
@@ -239,24 +286,6 @@ const App: React.FC = () => {
     );
     handleCloseEditModal();
   }, [handleCloseEditModal]);
-
-  const handleOpenDeleteConfirm = useCallback((taskId: number) => {
-    setDeletingTaskId(taskId);
-  }, []);
-
-  const handleCloseDeleteConfirm = useCallback(() => {
-    setDeletingTaskId(null);
-  }, []);
-
-  const handleDeleteTask = useCallback(() => {
-    if (deletingTaskId === null) return;
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== deletingTaskId));
-    handleCloseDeleteConfirm();
-     if(isDragging) {
-        setIsDragging(false);
-        setIsOverDeleteZone(false);
-    }
-  }, [deletingTaskId, handleCloseDeleteConfirm, isDragging]);
   
   const handleToggleSortOrder = useCallback(() => {
     const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
@@ -289,17 +318,9 @@ const App: React.FC = () => {
     setCompletionFilter(status);
   }, []);
 
-  const handleDragStart = useCallback(() => {
-    setIsDragging(true);
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
-    setIsOverDeleteZone(false);
-  }, []);
-
-  const handleSetIsOverDeleteZone = useCallback((isOver: boolean) => {
-    setIsOverDeleteZone(isOver);
+  const handleCloseOnboarding = useCallback(() => {
+    localStorage.setItem('onboardingCompleted', 'true');
+    setShowOnboarding(false);
   }, []);
 
   const completedCount = useMemo(() => tasks.filter(task => task.completed).length, [tasks]);
@@ -352,15 +373,10 @@ const App: React.FC = () => {
             tasks={filteredTasks}
             onToggleTask={handleToggleTask}
             onEditTask={handleOpenEditModal}
-            onToggleNotification={handleToggleTaskNotification}
-            onDeleteTask={handleOpenDeleteConfirm}
+            onDeleteTask={handleDeleteTask}
             currentTime={currentTime}
             onReorder={handleReorder}
             reorderingEnabled={!activeCategory && !searchQuery.trim()}
-            isAppDragging={isDragging}
-            onAppDragStart={handleDragStart}
-            onAppDragEnd={handleDragEnd}
-            onSetIsOverDeleteZone={handleSetIsOverDeleteZone}
           />
         </main>
       </div>
@@ -369,13 +385,6 @@ const App: React.FC = () => {
           task={editingTask}
           onClose={handleCloseEditModal}
           onSave={handleUpdateTask}
-        />
-      )}
-      {deletingTaskId !== null && (
-        <DeleteConfirmationModal
-          task={tasks.find(t => t.id === deletingTaskId)}
-          onClose={handleCloseDeleteConfirm}
-          onConfirm={handleDeleteTask}
         />
       )}
       {isSummaryModalOpen && (
@@ -391,10 +400,17 @@ const App: React.FC = () => {
           onAdd={handleAddTask}
         />
       )}
-      <DragToDeleteZone 
-        isVisible={isDragging}
-        isOver={isOverDeleteZone}
-      />
+      {snackbarMessage && (
+        <Snackbar
+          message={snackbarMessage}
+          onUndo={handleUndo}
+          onDismiss={handleDismissSnackbar}
+          key={Date.now()}
+        />
+      )}
+      {showOnboarding && (
+        <OnboardingModal onClose={handleCloseOnboarding} />
+      )}
     </div>
   );
 }
