@@ -38,6 +38,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
   });
   const [currentY, setCurrentY] = useState(0);
   const taskRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollRequestRef = useRef<number | null>(null);
 
   const handleLongPressStart = useCallback((index: number, taskId: number, e: React.MouseEvent | React.TouchEvent) => {
     if (!reorderingEnabled) return;
@@ -57,12 +58,40 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
     setCurrentY(eventY);
   }, [reorderingEnabled]);
 
+  const stopScrolling = useCallback(() => {
+    if (scrollRequestRef.current) {
+      cancelAnimationFrame(scrollRequestRef.current);
+      scrollRequestRef.current = null;
+    }
+  }, []);
+
+  const startScrolling = useCallback((direction: 'up' | 'down') => {
+    if (scrollRequestRef.current) return;
+    const scroll = () => {
+      const scrollAmount = direction === 'up' ? -10 : 10;
+      window.scrollBy(0, scrollAmount);
+      scrollRequestRef.current = requestAnimationFrame(scroll);
+    };
+    scroll();
+  }, []);
+
   const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!dragState.isDragging) return;
     e.preventDefault();
 
     const eventY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     setCurrentY(eventY);
+
+    const viewportHeight = window.innerHeight;
+    const edgeSize = viewportHeight * 0.15; // 15% edge triggers scroll
+
+    if (eventY < edgeSize) {
+      startScrolling('up');
+    } else if (eventY > viewportHeight - edgeSize) {
+      startScrolling('down');
+    } else {
+      stopScrolling();
+    }
 
     const newDragOverIndex = taskRefs.current.findIndex(ref => {
       if (!ref) return false;
@@ -73,11 +102,13 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
     if (newDragOverIndex !== -1) {
       setDragState(prev => ({ ...prev, dragOverIndex: newDragOverIndex }));
     }
-  }, [dragState.isDragging]);
+  }, [dragState.isDragging, startScrolling, stopScrolling]);
 
 
   const handleDragEnd = useCallback((e: MouseEvent | TouchEvent) => {
     if (!dragState.isDragging || dragState.startIndex === null) return;
+    
+    stopScrolling();
     
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
@@ -96,7 +127,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
       dragOverIndex: null,
       initialEventY: 0,
     });
-  }, [dragState, tasks, onReorder]);
+  }, [dragState, tasks, onReorder, stopScrolling]);
 
   useEffect(() => {
     if (dragState.isDragging) {
@@ -111,8 +142,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
       window.removeEventListener('touchmove', handleDragMove);
       window.removeEventListener('mouseup', handleDragEnd);
       window.removeEventListener('touchend', handleDragEnd);
+      stopScrolling();
     };
-  }, [dragState.isDragging, handleDragMove, handleDragEnd]);
+  }, [dragState.isDragging, handleDragMove, handleDragEnd, stopScrolling]);
 
   if (tasks.length === 0) {
     return (
