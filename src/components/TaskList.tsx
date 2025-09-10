@@ -39,6 +39,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
   const [currentY, setCurrentY] = useState(0);
   const taskRefs = useRef<(HTMLDivElement | null)[]>([]);
   const scrollRequestRef = useRef<number | null>(null);
+  const pointerYRef = useRef(0);
 
   const handleLongPressStart = useCallback((index: number, taskId: number, e: React.MouseEvent | React.TouchEvent) => {
     if (!reorderingEnabled) return;
@@ -56,6 +57,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
       initialEventY: eventY,
     });
     setCurrentY(eventY);
+    pointerYRef.current = eventY;
   }, [reorderingEnabled]);
 
   const stopScrolling = useCallback(() => {
@@ -70,6 +72,21 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
     const scroll = () => {
       const scrollAmount = direction === 'up' ? -10 : 10;
       window.scrollBy(0, scrollAmount);
+      
+      const pointerY = pointerYRef.current;
+      const newDragOverIndex = taskRefs.current.findIndex(ref => {
+        if (!ref) return false;
+        const rect = ref.getBoundingClientRect();
+        return pointerY >= rect.top && pointerY <= rect.bottom;
+      });
+
+      if (newDragOverIndex !== -1) {
+        setDragState(prev => {
+          if (prev.dragOverIndex === newDragOverIndex) return prev;
+          return { ...prev, dragOverIndex: newDragOverIndex };
+        });
+      }
+      
       scrollRequestRef.current = requestAnimationFrame(scroll);
     };
     scroll();
@@ -81,6 +98,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleTask, onEditTask, on
 
     const eventY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     setCurrentY(eventY);
+    pointerYRef.current = eventY;
 
     const viewportHeight = window.innerHeight;
     const edgeSize = viewportHeight * 0.15; // 15% edge triggers scroll
