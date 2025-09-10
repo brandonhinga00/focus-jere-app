@@ -58,34 +58,47 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (isLongPressActive) return;
-    if (dragState.startX === 0) return;
+    if (isLongPressActive || dragState.startX === 0) return;
 
     const currentX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     const deltaX = currentX - dragState.startX;
     const deltaY = currentY - dragState.startY;
 
-    if (!dragState.isIntentional && (Math.abs(deltaX) > MOVE_THRESHOLD || Math.abs(deltaY) > MOVE_THRESHOLD)) {
-      clearLongPressTimer();
+    // Only start swiping if it's the first intentional move
+    if (!dragState.isIntentional) {
+      // Check if movement is significant enough to be considered a gesture
+      if (Math.abs(deltaX) > MOVE_THRESHOLD || Math.abs(deltaY) > MOVE_THRESHOLD) {
+        clearLongPressTimer();
 
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // It's a horizontal swipe.
-        setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
+        // If horizontal movement is greater, we start a swipe.
+        // `touch-action: pan-y` will let the browser handle vertical scrolls.
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
+        } else {
+          // It's a vertical scroll. Abort the gesture on this element to let the browser scroll freely.
+          setDragState({ startX: 0, startY: 0, currentX: 0, isSwiping: false, isIntentional: false });
+          return;
+        }
       } else {
-        // It's a vertical scroll, so we cancel the gesture for this component
-        setDragState({ startX: 0, startY: 0, currentX: 0, isSwiping: false, isIntentional: false });
+        // Not enough movement yet, don't do anything.
         return;
       }
     }
 
     if (dragState.isSwiping) {
-        // Prevent swiping left on completed tasks
-        if (completed && deltaX < 0) {
-             setDragState(prev => ({ ...prev, currentX: prev.startX }));
-             return;
-        }
-       setDragState(prev => ({ ...prev, currentX }));
+      // Once we are actively swiping horizontally, we prevent the browser from trying to scroll vertically.
+      // This creates a "lock" and is crucial for compatibility on sensitive devices like iPhones.
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      
+      // Prevent swiping left on completed tasks
+      if (completed && deltaX < 0) {
+        setDragState(prev => ({ ...prev, currentX: prev.startX }));
+        return;
+      }
+      setDragState(prev => ({ ...prev, currentX }));
     }
   };
   
