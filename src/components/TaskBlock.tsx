@@ -176,7 +176,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
   `;
 
   const taskWrapperClasses = `
-    transition-all duration-300
+    relative overflow-hidden rounded-xl transition-all duration-300
     ${isExiting ? 'opacity-0 scale-90' : (completed ? 'scale-95' : 'scale-100')}
   `;
 
