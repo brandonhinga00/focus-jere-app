@@ -82,7 +82,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [completionFilter, setCompletionFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>(
-    () => (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'
+    () => (localStorage.getItem('theme') as 'light' | 'dark') || 'light'
   );
   
   const [lastAction, setLastAction] = useState<{ task: Task; originalIndex: number; type: 'deleted' | 'toggled' } | null>(null);
