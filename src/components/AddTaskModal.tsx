@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Task, Category } from '../types';
 
-interface EditTaskModalProps {
-  task: Task;
+interface AddTaskModalProps {
   onClose: () => void;
-  onSave: (task: Task) => void;
+  onAdd: (task: Omit<Task, 'id' | 'completed'>) => void;
 }
 
-const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) => {
-  const [formData, setFormData] = useState<Task>(task);
+const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
+  const [formData, setFormData] = useState({
+    activity: '',
+    emoji: '📝',
+    category: Category.Work,
+    startTime: '',
+    endTime: '',
+    notificationsEnabled: true,
+  });
   const [timeError, setTimeError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setFormData(task);
-  }, [task]);
 
   useEffect(() => {
     if (formData.startTime && formData.endTime) {
@@ -22,6 +24,8 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
       } else {
         setTimeError(null);
       }
+    } else {
+        setTimeError(null); // Clear error if one of the fields is empty
     }
   }, [formData.startTime, formData.endTime]);
 
@@ -37,10 +41,10 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (timeError) {
+    if (timeError || !formData.activity || !formData.startTime || !formData.endTime) {
       return;
     }
-    onSave(formData);
+    onAdd(formData);
   };
 
   return (
@@ -49,13 +53,13 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="edit-task-title"
+      aria-labelledby="add-task-title"
     >
       <div
         className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-xl w-full max-w-md mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="edit-task-title" className="text-2xl font-bold mb-6 text-cyan-600 dark:text-cyan-300">Editar Tarea</h2>
+        <h2 id="add-task-title" className="text-2xl font-bold mb-6 text-cyan-600 dark:text-cyan-300">Agregar Nueva Tarea</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="activity" className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Actividad</label>
@@ -94,7 +98,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 [color-scheme:light] dark:[color-scheme:dark]"
               >
                 {Object.values(Category).map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -112,7 +116,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
                   name="startTime"
                   value={formData.startTime}
                   onChange={handleChange}
-                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 [color-scheme:light] dark:[color-scheme:dark]"
                   required
                 />
               </div>
@@ -124,7 +128,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
                   name="endTime"
                   value={formData.endTime}
                   onChange={handleChange}
-                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 [color-scheme:light] dark:[color-scheme:dark]"
                   required
                 />
               </div>
@@ -155,10 +159,10 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
             </button>
             <button
               type="submit"
-              disabled={!!timeError}
+              disabled={!!timeError || !formData.activity || !formData.startTime || !formData.endTime}
               className="px-4 py-2 rounded-md text-white font-semibold bg-cyan-600 hover:bg-cyan-500 transition-colors disabled:bg-cyan-300 dark:disabled:bg-cyan-800 disabled:cursor-not-allowed"
             >
-              Guardar Cambios
+              Agregar Tarea
             </button>
           </div>
         </form>
@@ -167,4 +171,4 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
   );
 };
 
-export default EditTaskModal;
+export default AddTaskModal;

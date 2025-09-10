@@ -94,7 +94,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 [color-scheme:light] dark:[color-scheme:dark]"
               >
                 {Object.values(Category).map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -112,7 +112,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
                   name="startTime"
                   value={formData.startTime}
                   onChange={handleChange}
-                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 [color-scheme:light] dark:[color-scheme:dark]"
                   required
                 />
               </div>
@@ -124,7 +124,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose, onSave }) 
                   name="endTime"
                   value={formData.endTime}
                   onChange={handleChange}
-                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 [color-scheme:light] dark:[color-scheme:dark]"
                   required
                 />
               </div>

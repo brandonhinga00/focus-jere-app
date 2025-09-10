@@ -49,7 +49,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ label, options, selecte
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        <span>
+        <span className="truncate">
           <span className="font-normal opacity-80 mr-1">{label}:</span>
           {selectedOption.label}
         </span>

@@ -70,7 +70,8 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
       clearLongPressTimer();
 
       if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // It's a horizontal swipe
+        // It's a horizontal swipe, disable page scroll.
+        document.body.style.overflow = 'hidden';
         setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
       } else {
         // It's a vertical scroll, so we cancel the gesture for this component
@@ -103,6 +104,9 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
   };
 
   const handlePressUp = (e: React.MouseEvent | React.TouchEvent) => {
+    if (dragState.isSwiping) {
+      document.body.style.overflow = '';
+    }
     clearLongPressTimer();
     
     if (isLongPressActive) {
@@ -148,6 +152,9 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
   };
   
   const handleGestureCancel = () => {
+    if (dragState.isSwiping) {
+      document.body.style.overflow = '';
+    }
     clearLongPressTimer();
     setIsLongPressActive(false);
 
