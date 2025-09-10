@@ -99,7 +99,7 @@ const Header: React.FC<HeaderProps> = ({ completedCount, totalCount, onPrepareNe
         
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
           <div className="flex w-full gap-4">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <FilterDropdown
                 label="Categoría"
                 options={categoryOptions}
@@ -107,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ completedCount, totalCount, onPrepareNe
                 onSelect={onCategoryFilterChange}
               />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <FilterDropdown
                 label="Estado"
                 options={statusOptions}
