@@ -1,21 +1,54 @@
 {
-  "short_name": "Focus Jere",
-  "name": "Focus Jere",
+  "short_name": "Focus Block",
+  "name": "Focus Block",
   "description": "Una lista de tareas cronológica, minimalista y motivadora para ayudarte a organizar tu día con bloques de tiempo de tamaño uniforme para mayor claridad y concentración.",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/7518/7518748.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "sizes": "192x192"
+      "purpose": "any"
     },
     {
       "src": "https://cdn-icons-png.flaticon.com/512/7518/7518748.png",
+      "sizes": "512x512",
       "type": "image/png",
-      "sizes": "512x512"
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/7518/7518748.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#0891b2",
-  "background_color": "#0f172a"
+  "background_color": "#0f172a",
+  "shortcuts": [
+    {
+      "name": "Agregar Nueva Tarea",
+      "short_name": "Nueva Tarea",
+      "description": "Abre el modal para añadir una nueva tarea al día.",
+      "url": "/?action=add-task",
+      "icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/32/32339.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Vista principal de las tareas del día"
+    },
+    {
+      "src": "/screenshots/screenshot2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Modal de resumen diario"
+    }
+  ]
 }

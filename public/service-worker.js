@@ -1,7 +1,7 @@
 // The cache name is versioned. When you deploy a new version of the app,
 // increment this version number. This will trigger the 'activate' event,
 // which will clean up old caches and ensure users get the new files.
-const CACHE_NAME = 'focus-jere-cache-v1.5.0';
+const CACHE_NAME = 'focus-jere-cache-v1.6.0';
 
 // These are the core files that make up the "application shell".
 // They are cached on install.

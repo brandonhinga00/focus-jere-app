@@ -96,6 +96,19 @@ const App: React.FC = () => {
       }
   }, []);
 
+  const handleOpenAddTaskModal = useCallback(() => {
+    setIsAddTaskModalOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'add-task') {
+        handleOpenAddTaskModal();
+        // Clean up the URL to avoid re-triggering on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [handleOpenAddTaskModal]);
+
   useEffect(() => {
     try {
         localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -261,10 +274,6 @@ const App: React.FC = () => {
     setEditingTask(null);
   }, []);
   
-  const handleOpenAddTaskModal = useCallback(() => {
-    setIsAddTaskModalOpen(true);
-  }, []);
-
   const handleCloseAddTaskModal = useCallback(() => {
     setIsAddTaskModalOpen(false);
   }, []);
@@ -392,7 +401,7 @@ const App: React.FC = () => {
           />
         </main>
         <footer className="text-center mt-8 py-4 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-400 dark:text-gray-500">v1.5.2</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">v1.6.0</p>
         </footer>
       </div>
       {editingTask && (
