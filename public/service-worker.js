@@ -1,4 +1,10 @@
-const CACHE_NAME = 'focus-jere-cache-v2';
+// The cache name is versioned. When you deploy a new version of the app,
+// increment this version number. This will trigger the 'activate' event,
+// which will clean up old caches and ensure users get the new files.
+const CACHE_NAME = 'focus-jere-cache-v1.5.0';
+
+// These are the core files that make up the "application shell".
+// They are cached on install.
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -9,6 +15,11 @@ const URLS_TO_CACHE = [
   'https://cdn-icons-png.flaticon.com/512/7518/7518748.png'
 ];
 
+// IMPORTANT: User data (tasks, progress, etc.) is NOT stored by the service worker.
+// It is safely stored in localStorage by the main application thread (App.tsx).
+// This service worker only holds a temporary, in-memory copy of task data
+// received via messages, solely for the purpose of scheduling notifications.
+// This data is not persisted by the service worker and is refreshed by the app.
 let tasks = [];
 let notifiedTaskIds = new Set();
 let notificationTimer = null;
@@ -56,6 +67,7 @@ function startNotificationTimer() {
     notificationTimer = setInterval(checkTasksAndNotify, 1000 * 60);
 }
 
+// When the service worker is installed, cache the application shell files.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -68,6 +80,7 @@ self.addEventListener('install', event => {
   );
 });
 
+// Serve requests from the cache first, falling back to the network.
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
@@ -81,6 +94,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
+// When the new service worker activates, delete any old caches.
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -96,11 +110,13 @@ self.addEventListener('activate', event => {
     }).then(() => {
       console.log('Service Worker activated. Starting notification checker.');
       startNotificationTimer();
+      // Take control of all open clients immediately.
       return self.clients.claim();
     })
   );
 });
 
+// Listen for messages from the main app to update task data for notifications.
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'UPDATE_DATA') {
     tasks = event.data.tasks;
