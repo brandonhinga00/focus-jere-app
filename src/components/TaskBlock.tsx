@@ -70,8 +70,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
       clearLongPressTimer();
 
       if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // It's a horizontal swipe, disable page scroll.
-        document.body.style.overflow = 'hidden';
+        // It's a horizontal swipe.
         setDragState(prev => ({ ...prev, isSwiping: true, isIntentional: true }));
       } else {
         // It's a vertical scroll, so we cancel the gesture for this component
@@ -81,12 +80,6 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
     }
 
     if (dragState.isSwiping) {
-        // For touch events, prevent the default browser action (scrolling)
-        // when a horizontal swipe is active.
-        if ('touches' in e) {
-            e.preventDefault();
-        }
-
         // Prevent swiping left on completed tasks
         if (completed && deltaX < 0) {
              setDragState(prev => ({ ...prev, currentX: prev.startX }));
@@ -104,9 +97,6 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
   };
 
   const handlePressUp = (e: React.MouseEvent | React.TouchEvent) => {
-    if (dragState.isSwiping) {
-      document.body.style.overflow = '';
-    }
     clearLongPressTimer();
     
     if (isLongPressActive) {
@@ -152,9 +142,6 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
   };
   
   const handleGestureCancel = () => {
-    if (dragState.isSwiping) {
-      document.body.style.overflow = '';
-    }
     clearLongPressTimer();
     setIsLongPressActive(false);
 
@@ -221,7 +208,11 @@ const TaskBlock: React.FC<TaskBlockProps> = ({ task, isCurrent, onEdit, onToggle
           <div 
             ref={taskNodeRef}
             className={taskBlockClasses}
-            style={{ transform: transform, transition: dragState.isSwiping ? 'none' : 'transform 0.3s ease' }}
+            style={{ 
+              transform: transform, 
+              transition: dragState.isSwiping ? 'none' : 'transform 0.3s ease',
+              touchAction: 'pan-y'
+            }}
             onMouseDown={handlePressDown}
             onMouseMove={handleMove}
             onMouseUp={handlePressUp}
